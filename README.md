@@ -46,6 +46,7 @@
 - [中式清汤](drinks/soup/chinese-clear-soup.md) - 入门级
 - [浓汤](drinks/soup/cream-soup.md) - 进阶级
 - [特色汤品](drinks/soup/special-soup.md) - 进阶级
+- [养生甜汤](drinks/soup/sweet-soup.md) - 入门级
 
 ### 🥤 果汁类
 新鲜水果的最佳处理方式：
