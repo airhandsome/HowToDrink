@@ -3,163 +3,406 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Viewer</title>
+    <title>Code & Brew - 程序员饮品指南</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            line-height: 1.5;
-            color: #24292e;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+        :root {
+            --primary: #2e7d32;
+            --secondary: #81c784;
+            --light: #f1f8e9;
+            --dark: #1b5e20;
+            --border: #c8e6c9;
+            --code-bg: #e8f5e9;
         }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            background: rgba(46, 125, 50, 0.9);
+            backdrop-filter: blur(5px);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.2) 0%, transparent 20%),
+                radial-gradient(circle at 80% 70%, rgba(255,255,255,0.2) 0%, transparent 20%);
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            margin: 0;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 1rem auto 0;
+            opacity: 0.9;
+        }
+
+        .tagline {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            backdrop-filter: blur(5px);
+        }
+
+        
         #container {
             display: flex;
-            margin-top: 20px;
+            max-width: 1200px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
         }
+        
         #sidebar {
             width: 300px;
-            padding-right: 20px;
-            border-right: 1px solid #e1e4e8;
+            background: #f8f9fa;
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+            overflow-y: auto;
         }
+        
         #content {
             flex: 1;
-            padding-left: 20px;
+            padding: 2rem;
+            background: white;
         }
+        
         .file-tree {
             list-style: none;
             padding-left: 0;
         }
+        
         .file-tree ul {
             list-style: none;
             padding-left: 20px;
-            border-left: 1px dashed #e1e4e8;
-            margin-left: 8px;
+            border-left: 1px dashed var(--border);
+            margin-left: 12px;
         }
+        
         .file-tree li {
-            padding: 3px 0;
+            padding: 5px 0;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             position: relative;
         }
+        
         .file-tree a {
-            color: #0366d6;
+            color: var(--primary);
             text-decoration: none;
             display: block;
-            padding: 2px 0;
+            padding: 4px 0;
+            transition: all 0.2s;
+            border-radius: 4px;
+            padding-left: 5px;
         }
+        
         .file-tree a:hover {
-            text-decoration: underline;
+            background: rgba(43, 138, 255, 0.1);
+            text-decoration: none;
         }
+        
         .dir-item {
-            font-weight: 600;
+            font-weight: 500;
         }
+        
         .markdown-body {
             font-size: 16px;
+            line-height: 1.7;
         }
-        .markdown-body h1, .markdown-body h2 {
-            padding-bottom: 0.3em;
-            border-bottom: 1px solid #eaecef;
+        
+        .markdown-body h1, 
+        .markdown-body h2 {
+            padding-bottom: 0.5em;
+            border-bottom: 1px solid var(--border);
+            font-family: 'Roboto Mono', monospace;
+            color: var(--dark);
         }
+        
+        .markdown-body h1 {
+            color: var(--primary);
+        }
+        
         .markdown-body img {
             max-width: 100%;
-        }
-        .markdown-body pre {
-            background-color: #f6f8fa;
             border-radius: 6px;
-            padding: 16px;
-            overflow: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
+        
+        .markdown-body pre {
+            background-color: var(--code-bg);
+            border-radius: 6px;
+            padding: 1rem;
+            overflow: auto;
+            border-left: 4px solid var(--primary);
+        }
+        
         .markdown-body code {
             background-color: rgba(27,31,35,0.05);
             border-radius: 3px;
             padding: 0.2em 0.4em;
-            font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9em;
         }
-        .breadcrumb {
+        
+        .markdown-body pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        .nav-buttons {
             display: flex;
-            padding: 8px 16px;
-            /* margin-bottom: 16px; */
-            list-style: none;
-            background-color: #f6f8fa;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+            align-items: center;
+            background: var(--light);
+            padding: 0.8rem 1rem;
             border-radius: 6px;
         }
+        
+        .nav-button {
+            padding: 6px 12px;
+            background-color: white;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-family: 'Roboto Mono', monospace;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .nav-button:hover {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .nav-button[disabled] {
+            color: var(--secondary);
+            cursor: not-allowed;
+            background-color: var(--light);
+            opacity: 0.7;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            flex: 1;
+            padding: 0;
+            margin: 0;
+            list-style: none;
+            background: none;
+            border-radius: 0;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
         .breadcrumb-item {
             display: flex;
         }
+        
         .breadcrumb-item + .breadcrumb-item::before {
             content: "/";
             display: inline-block;
             padding: 0 8px;
-            color: #6a737d;
+            color: var(--secondary);
         }
+        
         .breadcrumb-item a {
-            color: #0366d6;
+            color: var(--primary);
             text-decoration: none;
         }
+        
         .breadcrumb-item a:hover {
             text-decoration: underline;
         }
+        
         .empty-dir {
-            color: #6a737d;
+            color: var(--secondary);
             font-style: italic;
             padding-left: 20px;
         }
+        
         .dir-item > details > summary {
             list-style: none;
             cursor: pointer;
             position: relative;
             padding-left: 25px;
+            font-weight: 500;
+            color: var(--dark);
         }
+        
         .dir-item > details > summary::-webkit-details-marker {
             display: none;
         }
+        
         .dir-item > details > summary:before {
             content: "📁";
             position: absolute;
             left: 0;
+            font-size: 1.1em;
         }
+        
         .dir-item > details[open] > summary:before {
             content: "📂";
         }
+        
         .file-item a:before {
             content: "📄";
-            margin-right: 5px;
+            margin-right: 8px;
+            font-size: 1.1em;
         }
-        .nav-buttons {
+        
+        .feature-list {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+            justify-content: space-between;
+            gap: 1.5rem;
+            margin: 3rem auto;
+            max-width: 1200px;
+            padding: 0 2rem;
         }
-        .nav-button {
-            padding: 5px 10px;
-            background-color: #f6f8fa;
-            border: 1px solid #e1e4e8;
-            border-radius: 6px;
-            cursor: pointer;
-            color: #0366d6;
-            text-decoration: none;
-            font-size: 14px;
+
+        .feature-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            flex: 1;
+            box-shadow: 0 3px 10px rgba(46,125,50,0.1);
+            border-top: 3px solid var(--primary);
+            transition: all 0.3s ease;
+            text-align: center;
+            min-width: 0;
         }
-        .nav-button:hover {
-            background-color: #e1e4e8;
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(46,125,50,0.15);
+            background-color: #f8fffa;
         }
-        .nav-button[disabled] {
-            color: #6a737d;
-            cursor: not-allowed;
-            background-color: #f6f8fa;
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+        }
+
+        .feature-title {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+            font-size: 1.1rem;
+        }
+
+        .feature-card p {
+            color: #555;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--secondary);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border);
+            margin-top: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            #container {
+                flex-direction: column;
+            }
+            
+            #sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+            
+            .feature-card {
+                width: 100%;
+            }
+        }
+        @media (max-width: 900px) {
+            .feature-list {
+                flex-wrap: wrap;
+            }
+            .feature-card {
+                flex: 0 0 calc(50% - 1rem);
+            }
+        }
+        @media (max-width: 600px) {
+            .feature-card {
+                flex: 0 0 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Markdown Viewer</h1>
+    <div class="header">
+        <h1>Code & Brew</h1>
+        <p>程序员饮品制作指南 - 将编程的精确与调饮的艺术完美结合</p>
+        <div class="tagline">console.log('Hello, Barista!')</div>
+    </div>
+    
+    <div class="feature-list">
+        <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3 class="feature-title">掌握基本原理</h3>
+            <p>学习饮品制作的核心原理，如同掌握编程基础一样重要</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3 class="feature-title">原料特性分析</h3>
+            <p>深入了解各种原料的特性，找到最佳搭配组合</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3 class="feature-title">精确参数控制</h3>
+            <p>通过精确的温度、时间和配比控制，提升饮品品质</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🧪</div>
+            <h3 class="feature-title">创新实验精神</h3>
+            <p>鼓励尝试新配方，开发属于你的独特饮品</p>
+        </div>
+    </div>
     
     <div id="container">
         <div id="sidebar">
-            <h3>文件目录</h3>
+            <h3>配方目录</h3>
             <ul id="file-tree" class="file-tree"></ul>
         </div>
         
@@ -171,6 +414,11 @@
             <div id="markdown-content" class="markdown-body"></div>
         </div>
     </div>
+    
+    <div class="footer">
+        <p>Code & Brew © 2025 - 为程序员打造的饮品实验室</p>
+        <p>将代码的严谨与调饮的创意完美融合</p>
+    </div>
 
     <script>
         // 配置
@@ -181,20 +429,25 @@
         // 状态
         let currentPath = defaultFile;
         let fileTreeData = [];
-        let historyStack = [defaultFile]; // 新增：历史记录栈
-        let historyIndex = 0; // 新增：当前历史记录索引
+        let historyStack = [defaultFile]; // 初始化时包含默认文件
+        let historyIndex = 0; // 初始索引为0
         
         // 初始化
         document.addEventListener('DOMContentLoaded', async () => {
             await loadFileTree();
-            await loadMarkdown(currentPath, true);
+            await loadMarkdown(currentPath, true); // 初始加载不记录历史
             
             // 监听内容区域内的链接点击
             document.getElementById('markdown-content').addEventListener('click', handleContentLinkClick);
+            
+            // 监听返回按钮点击
             document.getElementById('back-button').addEventListener('click', goBack);
+            
+            // 初始更新返回按钮状态
+            updateBackButton();
         });
-
-        // 新增：返回功能
+        
+        // 返回功能
         function goBack() {
             if (historyIndex > 0) {
                 historyIndex--;
@@ -204,11 +457,12 @@
             updateBackButton();
         }
         
-        // 新增：更新返回按钮状态
+        // 更新返回按钮状态
         function updateBackButton() {
             const backButton = document.getElementById('back-button');
             backButton.disabled = historyIndex <= 0;
         }
+        
         // 处理内容区域内的链接点击
         function handleContentLinkClick(event) {
             const link = event.target.closest('a');
@@ -284,18 +538,16 @@
             
             return [
                 { name: 'README.md', type: 'file', path: 'README.md' },
-                { name: 'docs', type: 'dir', path: 'docs', children: [
-                    { name: 'guide.md', type: 'file', path: 'docs/guide.md' }
+                { name: '咖啡', type: 'dir', path: '咖啡', children: [
+                    { name: '意式浓缩.md', type: 'file', path: '咖啡/意式浓缩.md' },
+                    { name: '手冲咖啡.md', type: 'file', path: '咖啡/手冲咖啡.md' }
                 ]},
-                { name: 'drinks', type: 'dir', path: 'drinks', children: [
-                    { name: 'tea', type: 'dir', path: 'drinks/tea', children: [
-                        { name: 'black-tea', type: 'dir', path: 'drinks/tea/black-tea', children: [
-                            { name: 'README.md', type: 'file', path: 'drinks/tea/black-tea/README.md' }
-                        ]}
-                    ]}
+                { name: '茶', type: 'dir', path: '茶', children: [
+                    { name: '红茶.md', type: 'file', path: '茶/红茶.md' },
+                    { name: '绿茶.md', type: 'file', path: '茶/绿茶.md' }
                 ]},
-                { name: 'node_modules', type: 'dir', path: 'node_modules', children: [
-                    { name: 'some-package', type: 'dir', path: 'node_modules/some-package' }
+                { name: '特调饮品', type: 'dir', path: '特调饮品', children: [
+                    { name: '程序员特饮.md', type: 'file', path: '特调饮品/程序员特饮.md' }
                 ]}
             ];
         }
@@ -381,10 +633,19 @@
                 `;
             }
         }
-         // 高亮选中的文件
+        
+        // 高亮选中的文件
         function highlightSelectedFile(filePath) {
             document.querySelectorAll('#file-tree a').forEach(a => {
-                a.style.fontWeight = a.dataset.path === filePath ? 'bold' : 'normal';
+                if (a.dataset.path === filePath) {
+                    a.style.fontWeight = 'bold';
+                    a.style.background = 'rgba(43, 138, 255, 0.1)';
+                    a.style.borderLeft = '3px solid var(--primary)';
+                } else {
+                    a.style.fontWeight = 'normal';
+                    a.style.background = 'none';
+                    a.style.borderLeft = 'none';
+                }
             });
         }
         
@@ -395,10 +656,14 @@
             
             for (let i = 0; i < pathParts.length - 1; i++) {
                 currentPath = currentPath ? `${currentPath}/${pathParts[i]}` : pathParts[i];
-                const dirElement = document.querySelector(`.dir-item details[data-path="${currentPath}"]`);
-                if (dirElement) {
-                    dirElement.open = true;
-                }
+                const dirElements = document.querySelectorAll(`.dir-item details`);
+                
+                dirElements.forEach(details => {
+                    const summary = details.querySelector('summary');
+                    if (summary && summary.textContent === pathParts[i]) {
+                        details.open = true;
+                    }
+                });
             }
         }
         
@@ -418,7 +683,6 @@
                     li.innerHTML = `<a href="#" data-path="${path}">${part}</a>`;
                     li.querySelector('a').addEventListener('click', (e) => {
                         e.preventDefault();
-                        // 点击目录面包屑可以展开对应目录
                         const dirElement = document.querySelector(`.dir-item details[data-path="${path}"]`);
                         if (dirElement) {
                             dirElement.open = true;
