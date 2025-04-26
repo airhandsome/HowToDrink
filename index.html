@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: #24292e;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #container {
+            display: flex;
+            margin-top: 20px;
+        }
+        #sidebar {
+            width: 300px;
+            padding-right: 20px;
+            border-right: 1px solid #e1e4e8;
+        }
+        #content {
+            flex: 1;
+            padding-left: 20px;
+        }
+        .file-tree {
+            list-style: none;
+            padding-left: 0;
+        }
+        .file-tree ul {
+            list-style: none;
+            padding-left: 20px;
+            border-left: 1px dashed #e1e4e8;
+            margin-left: 8px;
+        }
+        .file-tree li {
+            padding: 3px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
+        }
+        .file-tree a {
+            color: #0366d6;
+            text-decoration: none;
+            display: block;
+            padding: 2px 0;
+        }
+        .file-tree a:hover {
+            text-decoration: underline;
+        }
+        .dir-item {
+            font-weight: 600;
+        }
+        .markdown-body {
+            font-size: 16px;
+        }
+        .markdown-body h1, .markdown-body h2 {
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #eaecef;
+        }
+        .markdown-body img {
+            max-width: 100%;
+        }
+        .markdown-body pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+        }
+        .markdown-body code {
+            background-color: rgba(27,31,35,0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
+        }
+        .breadcrumb {
+            display: flex;
+            padding: 8px 16px;
+            /* margin-bottom: 16px; */
+            list-style: none;
+            background-color: #f6f8fa;
+            border-radius: 6px;
+        }
+        .breadcrumb-item {
+            display: flex;
+        }
+        .breadcrumb-item + .breadcrumb-item::before {
+            content: "/";
+            display: inline-block;
+            padding: 0 8px;
+            color: #6a737d;
+        }
+        .breadcrumb-item a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        .breadcrumb-item a:hover {
+            text-decoration: underline;
+        }
+        .empty-dir {
+            color: #6a737d;
+            font-style: italic;
+            padding-left: 20px;
+        }
+        .dir-item > details > summary {
+            list-style: none;
+            cursor: pointer;
+            position: relative;
+            padding-left: 25px;
+        }
+        .dir-item > details > summary::-webkit-details-marker {
+            display: none;
+        }
+        .dir-item > details > summary:before {
+            content: "📁";
+            position: absolute;
+            left: 0;
+        }
+        .dir-item > details[open] > summary:before {
+            content: "📂";
+        }
+        .file-item a:before {
+            content: "📄";
+            margin-right: 5px;
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .nav-button {
+            padding: 5px 10px;
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #0366d6;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .nav-button:hover {
+            background-color: #e1e4e8;
+        }
+        .nav-button[disabled] {
+            color: #6a737d;
+            cursor: not-allowed;
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <h1>Markdown Viewer</h1>
+    
+    <div id="container">
+        <div id="sidebar">
+            <h3>文件目录</h3>
+            <ul id="file-tree" class="file-tree"></ul>
+        </div>
+        
+        <div id="content">
+            <div class="nav-buttons">
+                <button id="back-button" class="nav-button" disabled>← 返回</button>
+                <nav id="breadcrumb" class="breadcrumb"></nav>
+            </div>
+            <div id="markdown-content" class="markdown-body"></div>
+        </div>
+    </div>
+
+    <script>
+        // 配置
+        const basePath = '.'; // 当前目录
+        const defaultFile = 'README.md';
+        const excludedDirs = ['node_modules']; // 要排除的目录
+        
+        // 状态
+        let currentPath = defaultFile;
+        let fileTreeData = [];
+        let historyStack = [defaultFile]; // 新增：历史记录栈
+        let historyIndex = 0; // 新增：当前历史记录索引
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadFileTree();
+            await loadMarkdown(currentPath, true);
+            
+            // 监听内容区域内的链接点击
+            document.getElementById('markdown-content').addEventListener('click', handleContentLinkClick);
+            document.getElementById('back-button').addEventListener('click', goBack);
+        });
+
+        // 新增：返回功能
+        function goBack() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                const prevPath = historyStack[historyIndex];
+                loadMarkdown(prevPath, true); // 不记录历史
+            }
+            updateBackButton();
+        }
+        
+        // 新增：更新返回按钮状态
+        function updateBackButton() {
+            const backButton = document.getElementById('back-button');
+            backButton.disabled = historyIndex <= 0;
+        }
+        // 处理内容区域内的链接点击
+        function handleContentLinkClick(event) {
+            const link = event.target.closest('a');
+            if (!link) return;
+            
+            const href = link.getAttribute('href');
+            if (!href) return;
+            
+            // 检查是否是.md文件链接
+            if (href.endsWith('.md') || href.endsWith('.md#') || href.includes('.md#')) {
+                event.preventDefault();
+                
+                // 处理相对路径
+                let targetPath = href;
+                if (href.startsWith('./')) {
+                    const currentDir = currentPath.split('/').slice(0, -1).join('/');
+                    targetPath = `${currentDir}/${href.substring(2)}`;
+                } else if (!href.startsWith('/') && !href.startsWith('http')) {
+                    const currentDir = currentPath.split('/').slice(0, -1).join('/');
+                    targetPath = `${currentDir}/${href}`;
+                }
+                
+                // 去除锚点部分
+                targetPath = targetPath.split('#')[0];
+                
+                loadMarkdown(targetPath);
+            }
+        }
+        
+        // 加载文件树
+        async function loadFileTree() {
+            try {
+                const response = await fetch('/.file-tree');
+                if (!response.ok) throw new Error('Failed to load file tree');
+                const fullTree = await response.json();
+                fileTreeData = filterFiles(fullTree);
+                renderFileTree(fileTreeData);
+            } catch (error) {
+                console.error('Error loading file tree:', error);
+                const fullTree = await getLocalFileTree();
+                fileTreeData = filterFiles(fullTree);
+                renderFileTree(fileTreeData);
+            }
+        }
+        
+        // 过滤文件
+        function filterFiles(tree) {
+            return tree.filter(item => {
+                // 排除特定目录
+                if (item.type === 'dir' && excludedDirs.includes(item.name)) {
+                    return false;
+                }
+                
+                if (item.type === 'file') {
+                    return item.name.endsWith('.md');
+                } else if (item.type === 'dir') {
+                    if (item.children) {
+                        item.children = filterFiles(item.children);
+                        return item.children.length > 0;
+                    }
+                    return false;
+                }
+                return false;
+            });
+        }
+        
+        // 获取本地文件树
+        async function getLocalFileTree() {
+            try {
+                const response = await fetch('/file-tree.json');
+                if (response.ok) return await response.json();
+            } catch (e) {}
+            
+            return [
+                { name: 'README.md', type: 'file', path: 'README.md' },
+                { name: 'docs', type: 'dir', path: 'docs', children: [
+                    { name: 'guide.md', type: 'file', path: 'docs/guide.md' }
+                ]},
+                { name: 'drinks', type: 'dir', path: 'drinks', children: [
+                    { name: 'tea', type: 'dir', path: 'drinks/tea', children: [
+                        { name: 'black-tea', type: 'dir', path: 'drinks/tea/black-tea', children: [
+                            { name: 'README.md', type: 'file', path: 'drinks/tea/black-tea/README.md' }
+                        ]}
+                    ]}
+                ]},
+                { name: 'node_modules', type: 'dir', path: 'node_modules', children: [
+                    { name: 'some-package', type: 'dir', path: 'node_modules/some-package' }
+                ]}
+            ];
+        }
+        
+        // 渲染文件树
+        function renderFileTree(tree, parentElement = document.getElementById('file-tree'), level = 0) {
+            parentElement.innerHTML = '';
+            
+            if (tree.length === 0) {
+                parentElement.innerHTML = '<li class="empty-dir">(空目录)</li>';
+                return;
+            }
+            
+            tree.forEach(item => {
+                const li = document.createElement('li');
+                
+                if (item.type === 'dir') {
+                    li.className = 'dir-item';
+                    li.innerHTML = `
+                        <details>
+                            <summary>${item.name}</summary>
+                            <ul class="file-tree"></ul>
+                        </details>
+                    `;
+                    
+                    if (item.children && item.children.length > 0) {
+                        renderFileTree(item.children, li.querySelector('ul'), level + 1);
+                    } else {
+                        li.querySelector('ul').innerHTML = '<li class="empty-dir">(空目录)</li>';
+                    }
+                } else {
+                    li.className = 'file-item';
+                    li.innerHTML = `<a href="#" data-path="${item.path}">${item.name}</a>`;
+                    li.querySelector('a').addEventListener('click', (e) => {
+                        e.preventDefault();
+                        loadMarkdown(item.path);
+                    });
+                }
+                
+                parentElement.appendChild(li);
+            });
+        }
+        
+        // 加载并渲染Markdown
+        async function loadMarkdown(filePath, skipHistory = false) {
+            try {
+                const response = await fetch(filePath);
+                if (!response.ok) throw new Error('File not found');
+                const markdown = await response.text();
+                
+                // 更新当前路径
+                currentPath = filePath;
+                updateBreadcrumb(filePath);
+                
+                // 渲染Markdown
+                document.getElementById('markdown-content').innerHTML = 
+                    DOMPurify.sanitize(marked.parse(markdown));
+                
+                // 高亮当前选中的文件
+                highlightSelectedFile(filePath);
+                
+                // 自动展开包含当前文件的目录
+                expandParentDirs(filePath);
+                
+                // 记录历史（除非跳过）
+                if (!skipHistory) {
+                    // 如果当前不是历史记录的最后一项，截断历史
+                    if (historyIndex < historyStack.length - 1) {
+                        historyStack = historyStack.slice(0, historyIndex + 1);
+                    }
+                    
+                    // 添加新记录
+                    historyStack.push(filePath);
+                    historyIndex++;
+                    updateBackButton();
+                }
+            } catch (error) {
+                console.error('Error loading markdown:', error);
+                document.getElementById('markdown-content').innerHTML = `
+                    <h2>Error</h2>
+                    <p>Could not load ${filePath}</p>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+         // 高亮选中的文件
+        function highlightSelectedFile(filePath) {
+            document.querySelectorAll('#file-tree a').forEach(a => {
+                a.style.fontWeight = a.dataset.path === filePath ? 'bold' : 'normal';
+            });
+        }
+        
+        // 展开包含当前文件的目录
+        function expandParentDirs(filePath) {
+            const pathParts = filePath.split('/');
+            let currentPath = '';
+            
+            for (let i = 0; i < pathParts.length - 1; i++) {
+                currentPath = currentPath ? `${currentPath}/${pathParts[i]}` : pathParts[i];
+                const dirElement = document.querySelector(`.dir-item details[data-path="${currentPath}"]`);
+                if (dirElement) {
+                    dirElement.open = true;
+                }
+            }
+        }
+        
+        // 更新面包屑导航
+        function updateBreadcrumb(filePath) {
+            const breadcrumb = document.getElementById('breadcrumb');
+            const parts = filePath.split('/');
+            
+            breadcrumb.innerHTML = '';
+            
+            parts.forEach((part, index) => {
+                const li = document.createElement('li');
+                li.className = 'breadcrumb-item';
+                
+                if (index < parts.length - 1) {
+                    const path = parts.slice(0, index + 1).join('/');
+                    li.innerHTML = `<a href="#" data-path="${path}">${part}</a>`;
+                    li.querySelector('a').addEventListener('click', (e) => {
+                        e.preventDefault();
+                        // 点击目录面包屑可以展开对应目录
+                        const dirElement = document.querySelector(`.dir-item details[data-path="${path}"]`);
+                        if (dirElement) {
+                            dirElement.open = true;
+                        }
+                    });
+                } else {
+                    li.textContent = part;
+                }
+                
+                breadcrumb.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>

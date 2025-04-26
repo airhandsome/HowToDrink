@@ -37,16 +37,16 @@
 
 ### 🍵 茶类
 传统与创新的完美结合：
-- [红茶](drinks/tea/black-tea.md) - 入门级
-- [绿茶](drinks/tea/green-tea.md) - 入门级
-- [花茶](drinks/tea/flower-tea.md) - 入门级
+- [红茶](drinks/tea/black-tea/README.md) - 入门级
+- [绿茶](drinks/tea/green-tea/README.md) - 入门级
+- [花茶](drinks/tea/flower-tea/README.md) - 入门级
 
 ### 🥣 汤类
 滋养身心的美味：
 - [中式清汤](drinks/soup/chinese-clear-soup.md) - 入门级
 - [浓汤](drinks/soup/cream-soup.md) - 进阶级
 - [特色汤品](drinks/soup/special-soup.md) - 进阶级
-- [养生甜汤](drinks/soup/sweet-soup.md) - 入门级
+- [养生甜汤](drinks/sweet-soup/README.md) - 入门级
 
 ### 🥤 果汁类
 新鲜水果的最佳处理方式：
@@ -98,6 +98,13 @@
 3. 💾 提交你的修改：`git commit -am 'Add: 新饮品配方'`
 4. 🚀 推送到分支：`git push origin feature/new-drink`
 5. 📬 提交 Pull Request
+
+## 📜 项目本地部署查看
+1. 需要安装node
+2. 安装依赖：`npm install`
+3. 启动本地服务：`node server.js`
+4. 在浏览器打开: `localhost:3000`
+
 
 ## ⚠️ 注意事项
 
